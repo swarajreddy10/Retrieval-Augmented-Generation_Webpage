@@ -1,8 +1,21 @@
 import axios from 'axios'
 import { QueryResponse } from '../types'
 
+// Generate session ID
+const getSessionId = () => {
+  let sessionId = localStorage.getItem('echo-ai-session')
+  if (!sessionId) {
+    sessionId = crypto.randomUUID()
+    localStorage.setItem('echo-ai-session', sessionId)
+  }
+  return sessionId
+}
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  headers: {
+    'X-Session-ID': getSessionId()
+  }
 })
 
 export const uploadFiles = async (files: FileList) => {

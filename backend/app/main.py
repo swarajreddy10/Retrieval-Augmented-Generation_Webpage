@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from typing import List
+from typing import List, Optional
 import os
 from dotenv import load_dotenv
 import logging
+import uuid
 
 # Load environment variables
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '../../.env'))
@@ -57,14 +58,17 @@ async def health_check():
     )
 
 @app.post("/api/upload", response_model=UploadResponse)
-async def upload_documents(files: List[UploadFile] = File(...)):
+async def upload_documents(files: List[UploadFile] = File(...), x_session_id: Optional[str] = Header(None)):
     """Simple document upload"""
     try:
         if not files:
             raise HTTPException(status_code=400, detail="No files provided")
         
-        # Clear previous documents
-        rag_service.clear_documents()
+        # Generate session ID if not provided
+        session_id = x_session_id or str(uuid.uuid4())
+        
+        # Clear previous documents for this session
+        rag_service.clear_documents(session_id)
         
         # Process first file only
         file = files[0]
@@ -83,8 +87,8 @@ async def upload_documents(files: List[UploadFile] = File(...)):
             if not text_content.strip():
                 raise HTTPException(status_code=400, detail="No text could be extracted from the file")
             
-            # Store in simple RAG
-            rag_service.upload_document(text_content, file.filename)
+            # Store in simple RAG with session
+            rag_service.upload_document(text_content, file.filename, session_id)
             
         finally:
             FileProcessor.cleanup_temp_file(temp_path)
@@ -103,14 +107,17 @@ async def upload_documents(files: List[UploadFile] = File(...)):
         raise HTTPException(status_code=500, detail=f"Upload processing failed: {str(e)}")
 
 @app.post("/api/query", response_model=QueryResponse)
-async def query_documents(request: QueryRequest):
+async def query_documents(request: QueryRequest, x_session_id: Optional[str] = Header(None)):
     """Simple query processing"""
     try:
         if not request.question.strip():
             raise HTTPException(status_code=400, detail="Question cannot be empty")
         
-        # Use simple RAG
-        result = await rag_service.query(request.question)
+        # Generate session ID if not provided
+        session_id = x_session_id or str(uuid.uuid4())
+        
+        # Use simple RAG with session
+        result = await rag_service.query(request.question, session_id)
         
         return QueryResponse(
             answer=result["answer"],
