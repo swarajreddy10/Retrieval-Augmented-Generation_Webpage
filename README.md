@@ -2,6 +2,7 @@
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge&logo=vercel)](https://echo-ai-rag.vercel.app)
 [![Backend](https://img.shields.io/badge/Backend-Railway-purple?style=for-the-badge&logo=railway)](https://echo-ai.up.railway.app)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-blue?style=for-the-badge&logo=docker)](https://docker.com)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge&logo=python)](https://python.org)
 [![React](https://img.shields.io/badge/React-18+-blue?style=for-the-badge&logo=react)](https://reactjs.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
@@ -9,7 +10,7 @@
 
 ## Overview
 
-Echo AI is a production-ready Retrieval-Augmented Generation (RAG) system that enables intelligent document interaction through natural language queries. The system processes uploaded documents (PDF, TXT, DOCX) and provides contextual answers using state-of-the-art language models.
+Echo AI is a production-ready Retrieval-Augmented Generation (RAG) system that enables intelligent document interaction through natural language queries. The system processes uploaded documents (PDF, TXT, DOCX) and provides contextual answers using state-of-the-art language models with **sub-350ms response times** and support for **100+ concurrent users**.
 
 ## Architecture & Design Philosophy
 
@@ -19,7 +20,7 @@ Echo AI is a production-ready Retrieval-Augmented Generation (RAG) system that e
 
 **Dual LLM Strategy**: The system implements a primary-fallback architecture using Groq (primary) and Google Gemini (fallback) APIs, ensuring 99.9% uptime and sub-second response times.
 
-**Stateless Processing**: Documents are processed in-memory without persistent storage, ensuring data privacy and eliminating database management complexity.
+**Session-Based Processing**: Documents are processed with session isolation supporting 100+ concurrent users, ensuring data privacy and eliminating database management complexity with automatic memory cleanup.
 
 ## Technical Stack
 
@@ -209,13 +210,14 @@ Response: {"answer": "...", "sources": [...], "confidence": 0.9, "processing_tim
 ## Performance Characteristics
 
 ### Benchmarks
-- **Response Time**: <300ms (99th percentile)
-- **Document Processing**: 3MB files in ~2 seconds
-- **Memory Usage**: ~100MB baseline
-- **Concurrent Users**: 100+ (Railway auto-scaling)
-- **Uptime**: 99.9% (Railway + Vercel infrastructure)
+- **Response Time**: <350ms (tested)
+- **Document Processing**: 3MB files in <2 seconds
+- **Memory Usage**: Auto-cleanup at 200 sessions
+- **Concurrent Users**: 100+ with session isolation
+- **Uptime**: 99% (Railway + Vercel infrastructure)
 
 ### Scalability Considerations
+- **Session Management**: UUID-based isolation with automatic cleanup
 - **Horizontal Scaling**: Railway auto-scales based on CPU/memory usage
 - **CDN Distribution**: Vercel provides global edge deployment
 - **Rate Limiting**: Implemented at LLM API level (14,400 requests/day Groq)
@@ -223,8 +225,8 @@ Response: {"answer": "...", "sources": [...], "confidence": 0.9, "processing_tim
 ## Security & Privacy
 
 ### Data Handling
-- **No Persistent Storage**: Documents processed in-memory only
-- **Session Isolation**: Each upload clears previous documents
+- **Session-Based Storage**: Documents isolated per user session
+- **Automatic Cleanup**: Memory management with 200 session limit
 - **CORS Protection**: Configurable origin restrictions
 - **Input Validation**: File type and size restrictions (3MB limit)
 
